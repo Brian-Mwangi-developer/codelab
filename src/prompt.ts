@@ -418,6 +418,76 @@ export function buildDeepAnalysisCategoryMessage(
 	return parts.join('\n');
 }
 
+// --- Chunked deep analysis prompts (large codebase path) ---
+
+export function getDeepAnalysisChunkPrompt(category: AnalysisCategory): string {
+	return `${CATEGORY_PROMPTS[category]}
+
+You are analyzing a CHUNK of a larger codebase. Focus only on the files provided. Another agent will merge results from all chunks later.
+
+Output ONLY a valid JSON array of findings (can be empty []):
+{
+  "category": "${category}",
+  "severity": "info" | "warning" | "critical",
+  "title": "Short title (under 80 chars)",
+  "description": "Detailed explanation",
+  "files": ["relative/path.ts"],
+  "lines": [{"file": "path.ts", "start": 10, "end": 15}],
+  "impact": "Why this matters",
+  "recommendation": "Specific fix"
+}
+
+Rules:
+- Only report real issues visible in the provided files
+- Do not invent issues — return [] if this chunk is clean for this category
+- Be precise about file paths and line numbers
+- Output ONLY the JSON array`;
+}
+
+export function getDeepAnalysisCategoryCompilerPrompt(category: AnalysisCategory): string {
+	return `You are merging ${category} analysis findings from multiple chunk agents that each analyzed a portion of a large codebase.
+
+Your job:
+1. Deduplicate findings that describe the same underlying issue across chunks
+2. Merge related findings into a single finding where appropriate
+3. Adjust severity if multiple chunks confirm the same issue (escalate if needed)
+4. Sort by severity (critical → warning → info)
+
+Output ONLY a valid JSON array using the same finding schema as the input. No markdown, no explanation.`;
+}
+
+export function buildDeepAnalysisChunkMessage(
+	category: AnalysisCategory,
+	chunk: CollectedFile[],
+	patternsContent: string,
+	planContext: string
+): string {
+	const parts: string[] = [
+		`## Project patterns:\n${patternsContent}\n\n## Analysis focus:\n${planContext}\n\n## Files to analyze for ${category} issues (chunk of ${chunk.length} files):\n`,
+	];
+	for (const file of chunk) {
+		parts.push(`--- FILE: ${file.relativePath} ---`);
+		parts.push(file.content);
+		parts.push('');
+	}
+	return parts.join('\n');
+}
+
+export function buildDeepAnalysisCategoryCompilerMessage(
+	category: AnalysisCategory,
+	chunkOutputs: string[]
+): string {
+	const parts: string[] = [
+		`Merge ${category} findings from ${chunkOutputs.length} chunk agents:\n`,
+	];
+	chunkOutputs.forEach((output, i) => {
+		parts.push(`=== CHUNK ${i + 1} FINDINGS ===`);
+		parts.push(output);
+		parts.push('');
+	});
+	return parts.join('\n');
+}
+
 export function buildDeepAnalysisCompilerMessage(categoryOutputs: Record<string, string>): string {
 	const parts: string[] = [
 		`Compile the following findings from 4 specialist agents into a unified analysis:\n`,

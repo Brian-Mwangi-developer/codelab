@@ -301,7 +301,8 @@ export function activate(context: vscode.ExtensionContext) {
 				cancellable: true,
 			},
 			async (progress, token) => {
-				const findings = await runDeepAnalysis(root, progress, token);
+				const scope = loadScope(root);
+				const findings = await runDeepAnalysis(root, progress, token, scope);
 
 				if (token.isCancellationRequested) {
 					vscode.window.showInformationMessage('Codelab: Deep analysis cancelled.');
