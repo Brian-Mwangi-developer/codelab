@@ -1,0 +1,88 @@
+{
+  "name": "codelab",
+  "displayName": "codelab",
+  "description": "Extract engineering patterns and enforce code conformance",
+  "version": "0.0.2",
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codelab.countFiles",
+        "title": "Codelab: Count Workspace Files"
+      },
+      {
+        "command": "codelab.extractPatterns",
+        "title": "Codelab: Extract Patterns"
+      },
+      {
+        "command": "codelab.checkConformance",
+        "title": "Codelab: Check Code Conformance"
+      },
+      {
+        "command": "codelab.refreshIssues",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codelab-sidebar",
+          "title": "Codelab",
+          "icon": "media/codelab-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "codelab-sidebar": [
+        {
+          "id": "codelab.issuesView",
+          "name": "Pattern Issues",
+          "icon": "media/codelab-icon.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "codelab.checkConformance",
+          "when": "view == codelab.issuesView",
+          "group": "navigation"
+        },
+        {
+          "command": "codelab.refreshIssues",
+          "when": "view == codelab.issuesView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.110.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.56.1",
+    "eslint": "^9.39.3",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}

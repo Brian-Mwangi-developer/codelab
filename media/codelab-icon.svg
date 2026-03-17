@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">
+  <defs>
+    <mask id="shape-mask">
+      <!-- Start with full white (visible) -->
+      <rect width="100" height="100" fill="white"/>
+      <!-- Cut out the notch/bite on the upper-right -->
+      <path d="M62 28 Q80 40 73 57 Q66 70 55 63 Q44 55 51 41 Q56 30 62 28Z" fill="black"/>
+      <!-- Cut out diagonal stripe 1 -->
+      <rect x="-10" y="58" width="72" height="13" rx="2" transform="rotate(-45 25 65)" fill="black"/>
+      <!-- Cut out diagonal stripe 2 -->
+      <rect x="4" y="72" width="72" height="13" rx="2" transform="rotate(-45 39 79)" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Single circle with all cut-outs applied via mask — theme-friendly single color -->
+  <circle cx="50" cy="50" r="46" fill="#C5C5C5" mask="url(#shape-mask)"/>
+</svg>
