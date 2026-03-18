@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { collectFiles, countFiles } from './fileCollector';
-import { runClaudeAnalysis } from './claudeIntegration';
+import { runClaudeAnalysis, ensureClaudeAvailable } from './claudeIntegration';
 import { getAgentFilePrompt, buildAgentFileMessage } from './prompt';
 import { orchestratePatternExtraction } from './agentOrchestrator';
 import { checkConformance } from './conformanceChecker';
@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 		showCollapseAll: true,
 	});
 
-
+	// --- Issue count status bar ---
 	const issueCountBar = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Right,
 		99
@@ -75,6 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
+	// --- Register Hover + CodeAction for all languages ---
 	const allFiles: vscode.DocumentFilter = { scheme: 'file' };
 
 	context.subscriptions.push(
@@ -99,14 +100,15 @@ export function activate(context: vscode.ExtensionContext) {
 	const extractCmd = vscode.commands.registerCommand('codelab.extractPatterns', async () => {
 		const root = getWorkspaceRoot();
 		if (!root) { return; }
+		if (!await ensureClaudeAvailable()) { return; }
 
 		await vscode.window.withProgress(
 			{
 				location: vscode.ProgressLocation.Notification,
 				title: 'Codelab: Extracting Patterns',
-				cancellable: false,
+				cancellable: true,
 			},
-			async (progress) => {
+			async (progress, token) => {
 				progress.report({ message: 'Scanning workspace files...' });
 				const files = collectFiles(root);
 
@@ -115,12 +117,16 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 
+				if (token.isCancellationRequested) { return; }
+
 				progress.report({ message: `Found ${files.length} files. Analyzing patterns...` });
 
-				// Use orchestrator — handles both small and large codebases
-				const patternsOutput = await orchestratePatternExtraction(files, root, progress);
+				const patternsOutput = await orchestratePatternExtraction(files, root, progress, undefined, token);
 
-				if (!patternsOutput) {
+				if (!patternsOutput || token.isCancellationRequested) {
+					if (token.isCancellationRequested) {
+						vscode.window.showInformationMessage('Codelab: Pattern extraction cancelled.');
+					}
 					return;
 				}
 
@@ -133,10 +139,12 @@ export function activate(context: vscode.ExtensionContext) {
 				const patternsPath = path.join(codelabDir, 'patterns.md');
 				fs.writeFileSync(patternsPath, patternsOutput, 'utf-8');
 
+				if (token.isCancellationRequested) { return; }
+
 				progress.report({ message: 'Generating agent configuration files...' });
 				const agentPrompt = getAgentFilePrompt();
 				const agentMessage = buildAgentFileMessage(patternsOutput);
-				const agentResult = await runClaudeAnalysis(agentPrompt, agentMessage, root, progress);
+				const agentResult = await runClaudeAnalysis(agentPrompt, agentMessage, root, progress, 'sonnet', token);
 
 				if (agentResult.success) {
 					const parts = agentResult.output.split('===CURSOR_RULES_SEPARATOR===');
@@ -151,6 +159,8 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 				}
 
+				if (token.isCancellationRequested) { return; }
+
 				const doc = await vscode.workspace.openTextDocument(patternsPath);
 				await vscode.window.showTextDocument(doc);
 				vscode.window.showInformationMessage(
@@ -163,29 +173,30 @@ export function activate(context: vscode.ExtensionContext) {
 	const checkCmd = vscode.commands.registerCommand('codelab.checkConformance', async () => {
 		const root = getWorkspaceRoot();
 		if (!root) { return; }
+		if (!await ensureClaudeAvailable()) { return; }
 
 		await vscode.window.withProgress(
 			{
 				location: vscode.ProgressLocation.Notification,
 				title: 'Codelab: Checking Conformance',
-				cancellable: false,
+				cancellable: true,
 			},
-			async (progress) => {
-				const result = await checkConformance(root, progress);
+			async (progress, token) => {
+				const result = await checkConformance(root, progress, token);
 
 				if (!result) {
-					updateAllProviders([], root);
+					if (token.isCancellationRequested) {
+						vscode.window.showInformationMessage('Codelab: Conformance check cancelled.');
+					} else {
+						updateAllProviders([], root);
+					}
 					return;
 				}
 
 				const { issues, patternsHash } = result;
 
 				updateAllProviders(issues, root);
-
-				
 				saveConformance(root, issues, patternsHash);
-
-				// Update file watcher context
 				fileWatcher.setContext(issues, patternsHash, root, { updateAll: updateAllProviders });
 
 				if (issues.length === 0) {
@@ -202,7 +213,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		);
 	});
-
 
 	// --- Push Guard Toggle ---
 	const togglePushGuardCmd = vscode.commands.registerCommand('codelab.togglePushGuard', () => {
@@ -232,9 +242,10 @@ export function activate(context: vscode.ExtensionContext) {
 	const deepAnalysisCmd = vscode.commands.registerCommand('codelab.runDeepAnalysis', async () => {
 		const root = getWorkspaceRoot();
 		if (!root) { return; }
+		if (!await ensureClaudeAvailable()) { return; }
 
 		const confirm = await vscode.window.showWarningMessage(
-			'Deep analysis uses Opus (expensive) + Sonnet agents. This may take several minutes and incur significant API costs.',
+			'Deep analysis uses Opus + Sonnet agents. Requires a Claude Pro or higher subscription. This may take several minutes.',
 			'Run Analysis',
 			'Cancel'
 		);
@@ -244,10 +255,15 @@ export function activate(context: vscode.ExtensionContext) {
 			{
 				location: vscode.ProgressLocation.Notification,
 				title: 'Codelab: Deep Analysis',
-				cancellable: false,
+				cancellable: true,
 			},
-			async (progress) => {
-				const findings = await runDeepAnalysis(root, progress);
+			async (progress, token) => {
+				const findings = await runDeepAnalysis(root, progress, token);
+
+				if (token.isCancellationRequested) {
+					vscode.window.showInformationMessage('Codelab: Deep analysis cancelled.');
+					return;
+				}
 
 				analysisTree.setFindings(findings, root);
 

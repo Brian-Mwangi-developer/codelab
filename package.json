@@ -1,14 +1,40 @@
 {
   "name": "codelab",
-  "displayName": "codelab",
-  "description": "Extract engineering patterns and enforce code conformance",
-  "version": "0.0.2",
+  "displayName": "Codelab",
+  "description": "AI-powered code pattern extraction, conformance checking, and deep analysis — powered by Claude Code CLI",
+  "version": "0.0.1",
+  "publisher": "BrianMwangi",
+  "author": {
+    "name": "Brian Mwangi",
+    "url": "https://brianmwangi.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brianmwangi/codelab"
+  },
+  "homepage": "https://brianmwangi.dev",
+  "icon": "media/codelab-icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.110.0"
   },
   "categories": [
     "Linters",
     "Other"
+  ],
+  "keywords": [
+    "code quality",
+    "linting",
+    "patterns",
+    "conformance",
+    "claude",
+    "ai",
+    "code review",
+    "deep analysis"
   ],
   "activationEvents": [
     "onStartupFinished"

@@ -13,7 +13,8 @@ const CATEGORIES: AnalysisCategory[] = ['redundancy', 'implementation', 'perform
 
 export async function runDeepAnalysis(
 	rootPath: string,
-	progress: vscode.Progress<{ message?: string; increment?: number }>
+	progress: vscode.Progress<{ message?: string; increment?: number }>,
+	token?: vscode.CancellationToken
 ): Promise<AnalysisFinding[]> {
 	// Read patterns for context
 	const patternsPath = path.join(rootPath, '.codelab', 'patterns.md');
@@ -44,7 +45,9 @@ export async function runDeepAnalysis(
 	progress.report({ message: 'Planning analysis strategy (opus)...' });
 	const planPrompt = getDeepAnalysisPlanPrompt();
 	const planMessage = buildDeepAnalysisPlanMessage(patternsContent, files);
-	const planResult = await runClaudeAnalysis(planPrompt, planMessage, rootPath, progress, 'opus');
+	const planResult = await runClaudeAnalysis(planPrompt, planMessage, rootPath, progress, 'opus', token);
+
+	if (token?.isCancellationRequested) { return []; }
 
 	let planContext = '';
 	if (planResult.success) {
@@ -61,7 +64,7 @@ export async function runDeepAnalysis(
 	const categoryPromises = CATEGORIES.map(async (category) => {
 		const systemPrompt = getDeepAnalysisCategoryPrompt(category);
 		const userMessage = buildDeepAnalysisCategoryMessage(category, planContext, files);
-		const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, 'sonnet');
+		const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, 'sonnet', token);
 
 		if (result.success) {
 			// Save category output
@@ -92,7 +95,9 @@ export async function runDeepAnalysis(
 	progress.report({ message: 'Compiling analysis results (opus)...' });
 	const compilerPrompt = getDeepAnalysisCompilerPrompt();
 	const compilerMessage = buildDeepAnalysisCompilerMessage(categoryOutputs);
-	const compiled = await runClaudeAnalysis(compilerPrompt, compilerMessage, rootPath, progress, 'opus');
+	if (token?.isCancellationRequested) { return []; }
+
+	const compiled = await runClaudeAnalysis(compilerPrompt, compilerMessage, rootPath, progress, 'opus', token);
 
 	if (!compiled.success) {
 		// Fall back to concatenating raw results

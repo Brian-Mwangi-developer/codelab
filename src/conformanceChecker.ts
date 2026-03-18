@@ -23,7 +23,8 @@ export interface ConformanceResult {
 
 export async function checkConformance(
 	rootPath: string,
-	progress: vscode.Progress<{ message?: string; increment?: number }>
+	progress: vscode.Progress<{ message?: string; increment?: number }>,
+	token?: vscode.CancellationToken
 ): Promise<ConformanceResult | null> {
 	// Read patterns file
 	const patternsPath = path.join(rootPath, '.codelab', 'patterns.md');
@@ -57,7 +58,7 @@ export async function checkConformance(
 	const systemPrompt = getConformancePrompt();
 	const userMessage = buildConformanceMessage(patternsContent, filesToCheck);
 
-	const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress);
+	const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, 'sonnet', token);
 
 	if (!result.success) {
 		vscode.window.showErrorMessage(`Conformance check failed: ${result.error}`);

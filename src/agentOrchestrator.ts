@@ -66,16 +66,18 @@ export async function orchestratePatternExtraction(
 	files: CollectedFile[],
 	rootPath: string,
 	progress: vscode.Progress<{ message?: string; increment?: number }>,
-	config: ChunkConfig = DEFAULT_CONFIG
+	config: ChunkConfig = DEFAULT_CONFIG,
+	token?: vscode.CancellationToken
 ): Promise<string | null> {
 	if (files.length <= config.subAgentThreshold) {
 		// Single session — use sonnet directly
 		progress.report({ message: `Analyzing ${files.length} files with single session...` });
 		const systemPrompt = getSystemPrompt();
 		const userMessage = buildUserMessage(files);
-		const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress);
+		const result = await runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, 'sonnet', token);
 
 		if (!result.success) {
+			if (token?.isCancellationRequested) { return null; }
 			vscode.window.showErrorMessage(`Pattern extraction failed: ${result.error}`);
 			return null;
 		}
@@ -96,6 +98,8 @@ export async function orchestratePatternExtraction(
 	const model: ClaudeModel = 'haiku';
 
 	for (let i = 0; i < chunks.length; i += config.maxParallelAgents) {
+		if (token?.isCancellationRequested) { return null; }
+
 		const batch = chunks.slice(i, i + config.maxParallelAgents);
 		const batchStart = i + 1;
 		const batchEnd = Math.min(i + config.maxParallelAgents, chunks.length);
@@ -108,7 +112,7 @@ export async function orchestratePatternExtraction(
 			const chunkIdx = i + idx;
 			const systemPrompt = getChunkPatternPrompt();
 			const userMessage = buildChunkMessage(chunk);
-			return runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, model)
+			return runClaudeAnalysis(systemPrompt, userMessage, rootPath, progress, model, token)
 				.then((result) => {
 					if (result.success) {
 						const chunkFile = path.join(patternsDir, `chunk-${String(chunkIdx + 1).padStart(3, '0')}.md`);
@@ -121,10 +125,12 @@ export async function orchestratePatternExtraction(
 
 		const results = await Promise.all(promises);
 
+		if (token?.isCancellationRequested) { return null; }
+
 		for (let j = 0; j < results.length; j++) {
 			if (results[j].success) {
 				chunkOutputs.push(results[j].output);
-			} else {
+			} else if (!token?.isCancellationRequested) {
 				const chunkIdx = i + j + 1;
 				vscode.window.showWarningMessage(`Codelab: Chunk ${chunkIdx} failed — ${results[j].error}. Continuing with partial results.`);
 			}
@@ -132,7 +138,9 @@ export async function orchestratePatternExtraction(
 	}
 
 	if (chunkOutputs.length === 0) {
-		vscode.window.showErrorMessage('All sub-agents failed. No patterns extracted.');
+		if (!token?.isCancellationRequested) {
+			vscode.window.showErrorMessage('All sub-agents failed. No patterns extracted.');
+		}
 		return null;
 	}
 
@@ -140,10 +148,12 @@ export async function orchestratePatternExtraction(
 
 	const compilerPrompt = getPatternCompilerPrompt();
 	const compilerMessage = buildCompilerMessage(chunkOutputs);
-	const compiled = await runClaudeAnalysis(compilerPrompt, compilerMessage, rootPath, progress, 'sonnet');
+	const compiled = await runClaudeAnalysis(compilerPrompt, compilerMessage, rootPath, progress, 'sonnet', token);
 
 	if (!compiled.success) {
-		vscode.window.showErrorMessage(`Pattern compilation failed: ${compiled.error}`);
+		if (!token?.isCancellationRequested) {
+			vscode.window.showErrorMessage(`Pattern compilation failed: ${compiled.error}`);
+		}
 		return null;
 	}
 
