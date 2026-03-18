@@ -2,7 +2,7 @@ out
 dist
 node_modules
 .vscode-test/
-*.vsix
+# *.vsix
 ARCHITECTURE.md
 PLAN.md
 SYSTEM_DESIGN.md
