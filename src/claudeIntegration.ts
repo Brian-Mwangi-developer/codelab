@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
 
+export type ClaudeModel = 'haiku' | 'sonnet' | 'opus';
+
 export interface ClaudeResult {
 	success: boolean;
 	output: string;
@@ -11,14 +13,15 @@ export function runClaudeAnalysis(
 	systemPrompt: string,
 	userMessage: string,
 	workspacePath: string,
-	progress: vscode.Progress<{ message?: string; increment?: number }>
+	progress: vscode.Progress<{ message?: string; increment?: number }>,
+	model: ClaudeModel = 'sonnet'
 ): Promise<ClaudeResult> {
 	return new Promise((resolve) => {
-		progress.report({ message: 'Starting Claude Code session...' });
+		progress.report({ message: `Starting Claude Code session (${model})...` });
 
 		const args = [
 			'--print',
-			'--model', 'sonnet',
+			'--model', model,
 			'--system-prompt', systemPrompt,
 		];
 

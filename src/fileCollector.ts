@@ -18,7 +18,7 @@ const BINARY_EXTENSIONS = new Set([
 ]);
 
 const IGNORED_FILES = new Set([
-	'.DS_Store', 'Thumbs.db', 'desktop.ini',
+	'.DS_Store', 'Thumbs.db', 'desktop.ini', '.env'
 ]);
 
 const MAX_FILE_SIZE = 100 * 1024; // 100KB
