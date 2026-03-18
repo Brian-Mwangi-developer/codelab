@@ -3,3 +3,7 @@ dist
 node_modules
 .vscode-test/
 *.vsix
+ARCHITECTURE.md
+PLAN.md
+SYSTEM_DESIGN.md
+vsc-extension-quickstart.md
