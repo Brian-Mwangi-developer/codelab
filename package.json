@@ -32,6 +32,16 @@
         "command": "codelab.refreshIssues",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "codelab.togglePushGuard",
+        "title": "Codelab: Toggle Push Guard",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "codelab.runDeepAnalysis",
+        "title": "Codelab: Run Deep Analysis",
+        "icon": "$(beaker)"
       }
     ],
     "viewsContainers": {
@@ -49,6 +59,10 @@
           "id": "codelab.issuesView",
           "name": "Pattern Issues",
           "icon": "media/codelab-icon.svg"
+        },
+        {
+          "id": "codelab.analysisView",
+          "name": "Deep Analysis"
         }
       ]
     },
@@ -62,6 +76,16 @@
         {
           "command": "codelab.refreshIssues",
           "when": "view == codelab.issuesView",
+          "group": "navigation"
+        },
+        {
+          "command": "codelab.togglePushGuard",
+          "when": "view == codelab.issuesView",
+          "group": "navigation"
+        },
+        {
+          "command": "codelab.runDeepAnalysis",
+          "when": "view == codelab.analysisView",
           "group": "navigation"
         }
       ]
