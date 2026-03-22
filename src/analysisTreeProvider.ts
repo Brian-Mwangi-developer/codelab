@@ -81,16 +81,22 @@ export class SeverityGroupItem extends vscode.TreeItem {
 	}
 }
 
+export type AnalysisState = 'idle' | 'clean' | 'has-findings';
+
 export class AnalysisTreeProvider implements vscode.TreeDataProvider<SeverityGroupItem | FindingItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<void>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
 	private findings: AnalysisFinding[] = [];
 	private workspaceRoot = '';
+	private _state: AnalysisState = 'idle';
+
+	get state(): AnalysisState { return this._state; }
 
 	setFindings(findings: AnalysisFinding[], workspaceRoot: string): void {
 		this.findings = findings;
 		this.workspaceRoot = workspaceRoot;
+		this._state = findings.length > 0 ? 'has-findings' : 'clean';
 		this._onDidChangeTreeData.fire();
 	}
 

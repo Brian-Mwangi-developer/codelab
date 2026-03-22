@@ -68,6 +68,20 @@
         "command": "codelab.runDeepAnalysis",
         "title": "Codelab: Run Deep Analysis",
         "icon": "$(beaker)"
+      },
+      {
+        "command": "codelab.configureScope",
+        "title": "Codelab: Configure File Scope",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "codelab.ignoreInCodelab",
+        "title": "Codelab: Ignore in Analysis"
+      },
+      {
+        "command": "codelab.toggleScopeMode",
+        "title": "Codelab: Toggle Scope Mode",
+        "icon": "$(arrow-swap)"
       }
     ],
     "viewsContainers": {
@@ -85,6 +99,10 @@
           "id": "codelab.issuesView",
           "name": "Pattern Issues",
           "icon": "media/codelab-icon.svg"
+        },
+        {
+          "id": "codelab.scopeView",
+          "name": "File Scope"
         },
         {
           "id": "codelab.analysisView",
@@ -110,9 +128,25 @@
           "group": "navigation"
         },
         {
+          "command": "codelab.configureScope",
+          "when": "view == codelab.issuesView",
+          "group": "navigation"
+        },
+        {
+          "command": "codelab.toggleScopeMode",
+          "when": "view == codelab.scopeView",
+          "group": "navigation"
+        },
+        {
           "command": "codelab.runDeepAnalysis",
           "when": "view == codelab.analysisView",
           "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "codelab.ignoreInCodelab",
+          "group": "codelab@1"
         }
       ]
     }

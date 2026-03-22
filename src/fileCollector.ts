@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { CodelabScope, fileMatchesScope } from './scopeManager';
 
 const IGNORED_DIRS = new Set([
 	'node_modules', '.git', '__pycache__', '.venv', 'venv',
@@ -106,16 +107,14 @@ function walkDir(
 	}
 }
 
-export function collectFiles(rootPath: string): CollectedFile[] {
+export function collectFiles(rootPath: string, scope?: CodelabScope): CollectedFile[] {
 	const gitignorePatterns = parseGitignore(rootPath);
 	const files: CollectedFile[] = [];
 	walkDir(rootPath, rootPath, gitignorePatterns, files);
-	return files;
+	if (!scope || scope.patterns.length === 0) { return files; }
+	return files.filter(f => fileMatchesScope(f.relativePath, scope));
 }
 
-export function countFiles(rootPath: string): number {
-	const gitignorePatterns = parseGitignore(rootPath);
-	const files: CollectedFile[] = [];
-	walkDir(rootPath, rootPath, gitignorePatterns, files);
-	return files.length;
+export function countFiles(rootPath: string, scope?: CodelabScope): number {
+	return collectFiles(rootPath, scope).length;
 }

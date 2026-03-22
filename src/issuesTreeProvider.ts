@@ -52,16 +52,22 @@ export class FileGroupItem extends vscode.TreeItem {
 	}
 }
 
+export type IssuesState = 'idle' | 'clean' | 'has-issues';
+
 export class IssuesTreeProvider implements vscode.TreeDataProvider<FileGroupItem | IssueItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<void>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
 	private issues: ConformanceIssue[] = [];
 	private workspaceRoot = '';
+	private _state: IssuesState = 'idle';
+
+	get state(): IssuesState { return this._state; }
 
 	setIssues(issues: ConformanceIssue[], workspaceRoot: string): void {
 		this.issues = issues;
 		this.workspaceRoot = workspaceRoot;
+		this._state = issues.length > 0 ? 'has-issues' : 'clean';
 		this._onDidChangeTreeData.fire();
 	}
 

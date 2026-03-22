@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { collectFiles, CollectedFile } from './fileCollector';
+import { CodelabScope } from './scopeManager';
 import { runClaudeAnalysis } from './claudeIntegration';
 import { getConformancePrompt, buildConformanceMessage } from './prompt';
 import { PersistedIssue, sha256 } from './persistenceManager';
@@ -24,7 +25,8 @@ export interface ConformanceResult {
 export async function checkConformance(
 	rootPath: string,
 	progress: vscode.Progress<{ message?: string; increment?: number }>,
-	token?: vscode.CancellationToken
+	token?: vscode.CancellationToken,
+	scope?: CodelabScope
 ): Promise<ConformanceResult | null> {
 	// Read patterns file
 	const patternsPath = path.join(rootPath, '.codelab', 'patterns.md');
@@ -38,12 +40,11 @@ export async function checkConformance(
 	const patternsContent = fs.readFileSync(patternsPath, 'utf-8');
 	const patternsHash = sha256(patternsContent);
 
-	// Collect files to check
 	progress.report({ message: 'Finding files to check...' });
 	let filesToCheck: CollectedFile[];
 
 	try {
-		filesToCheck = collectFiles(rootPath);
+		filesToCheck = collectFiles(rootPath, scope);
 	} catch {
 		return null;
 	}
