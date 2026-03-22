@@ -2,7 +2,7 @@
   "name": "codelab",
   "displayName": "Codelab",
   "description": "AI-powered code pattern extraction, conformance checking, and deep analysis — powered by Claude Code CLI",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "BrianMwangi",
   "author": {
     "name": "Brian Mwangi",

@@ -3,15 +3,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CodelabScope, loadScope, saveScope } from './scopeManager';
 
-// Same dirs fileCollector ignores — no point showing them in scope picker
+
 const SKIP_DIRS = new Set([
 	'node_modules', '.git', '__pycache__', '.venv', 'venv',
 	'dist', 'build', '.next', '.nuxt', 'coverage', '.cache', '.codelab',
 ]);
 
-// ─────────────────────────────────────────────
-// Mode header item (top of tree, clickable)
-// ─────────────────────────────────────────────
+
 export class ScopeModeItem extends vscode.TreeItem {
 	readonly kind = 'mode' as const;
 
@@ -19,10 +17,11 @@ export class ScopeModeItem extends vscode.TreeItem {
 		const isExclude = mode === 'exclude';
 		super(
 			isExclude
-				? '$(eye-closed)  Exclude mode — checked items are IGNORED'
-				: '$(eye)  Include-only mode — only CHECKED items are analyzed',
+				? 'Exclude mode — checked items are IGNORED'
+				: 'Include-only mode — only CHECKED items are analyzed',
 			vscode.TreeItemCollapsibleState.None
 		);
+		this.iconPath = new vscode.ThemeIcon(isExclude ? 'eye-closed' : 'eye');
 		this.tooltip = isExclude
 			? 'Check a file/folder to exclude it from analysis. Click here to switch to include-only mode.'
 			: 'Check a file/folder to include it in analysis. Unchecked items are skipped. Click here to switch to exclude mode.';
@@ -35,9 +34,7 @@ export class ScopeModeItem extends vscode.TreeItem {
 	}
 }
 
-// ─────────────────────────────────────────────
-// File / Folder item with checkbox
-// ─────────────────────────────────────────────
+
 export class ScopeFileItem extends vscode.TreeItem {
 	readonly kind = 'file' as const;
 
